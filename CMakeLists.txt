@@ -4,17 +4,8 @@ include(FetchContent)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-
-
 file(GLOB SOURCES "src/*.cpp")
 set(INCLUDE "include")
-FetchContent_Declare(
-    ncurses
-    GIT_REPOSITORY https://github.com/mirror/ncurses.git
-    GIT_TAG        master
-)
-
-FetchContent_MakeAvailable(ncurses)
 
 FetchContent_Declare(
     cdk 
@@ -22,23 +13,21 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(cdk)
 
-list(APPEND CMAKE_PREFIX_PATH "${cdk_SOURCE_DIR}/build")
-list(APPEND CMAKE_PREFIX_PATH "${ncurses_SOURCE_DIR}/build")
-
-
-
+FetchContent_Declare(
+    fmt
+    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+    GIT_TAG        master
+)
+FetchContent_MakeAvailable(fmt)
+list(APPEND LIB fmt::fmt)
 list(APPEND INCLUDE ${cdk_SOURCE_DIR}/build/include)
-list(APPEND INCLUDE ${ncurses_SOURCE_DIR}/build/include)
+list(APPEND INCLUDE ${fmt_SOURCE_DIR}/include)
 
-file(GLOB LIB "${ncurses_SOURCE_DIR}/build/lib/*.a")
 list(APPEND LIB "${cdk_SOURCE_DIR}/build/lib/libcdk.a")
-
-include_directories(${INCLUDE})
-
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 if (NOT EXISTS ${cdk_SOURCE_DIR}/build)
-    message("Building cdk")
+    message("cdk not found, will be built")
     add_custom_target(cdk ALL
         COMMAND ./configure --prefix=${cdk_SOURCE_DIR}/build
         COMMAND make
@@ -46,21 +35,22 @@ if (NOT EXISTS ${cdk_SOURCE_DIR}/build)
         WORKING_DIRECTORY ${cdk_SOURCE_DIR}
     )
     add_dependencies(${PROJECT_NAME} cdk)
+else()
+    message("cdk already built")
 endif()
 
-if (NOT EXISTS ${ncurses_SOURCE_DIR}/build)
-    message("Building ncurses")
-    add_custom_target(ncurses ALL
-        COMMAND ./configure --prefix=${ncurses_SOURCE_DIR}/build --enable-widec
-        COMMAND make
-        COMMAND make install
-        WORKING_DIRECTORY ${ncurses_SOURCE_DIR}
-    )
-    add_dependencies(${PROJECT_NAME} ncurses)
-endif()
+find_package(Curses REQUIRED)
 
-set(RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/bin/debug)
-set(RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/bin/release)
+list(APPEND INCLUDE ${CURSES_INCLUDE_DIR})
+list(APPEND LIB ${CURSES_LIBRARIES})
 
+target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE})
+target_compile_definitions(${PROJECT_NAME} PRIVATE TERMINFO="${ncurses_SOURCE_DIR}/build/share/terminfo")
 
-link_libraries(${LIB})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${LIB})
+
+set_target_properties(
+    ${PROJECT_NAME} PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/bin/debug
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/bin/release
+)
