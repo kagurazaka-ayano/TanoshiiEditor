@@ -18,9 +18,14 @@ public:
     void insertLine(const std::string& line, int pos);
     void appendLine(const std::string& line);
     void removeLine(int pos);
+    std::size_t getBufferSize() const;
+    std::string& operator[](std::size_t idx);
+    operator std::string() const;
 private:
     std::vector<std::string> lines;
 
 };
+
+
 
 #endif // TANOSHIIEDITOR_BUFFER_H

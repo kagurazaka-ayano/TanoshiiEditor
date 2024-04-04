@@ -23,21 +23,48 @@ list(APPEND LIB fmt::fmt)
 list(APPEND INCLUDE ${cdk_SOURCE_DIR}/build/include)
 list(APPEND INCLUDE ${fmt_SOURCE_DIR}/include)
 
-list(APPEND LIB "${cdk_SOURCE_DIR}/build/lib/libcdk.a")
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 if (NOT EXISTS ${cdk_SOURCE_DIR}/build)
     message("cdk not found, will be built")
-    add_custom_target(cdk ALL
+    execute_process(
+        COMMAND ${CMAKE_COMMAND} -E echo "Blocking CMake process until this is built"
         COMMAND ./configure --prefix=${cdk_SOURCE_DIR}/build
+        WORKING_DIRECTORY ${cdk_SOURCE_DIR}
+        RESULT_VARIABLE result
+        OUTPUT_VARIABLE output
+    )
+    if(result)
+        message(FATAL_ERROR "Configuration step for cdk failed: ${result}")
+    else()
+        message("Configuration step for cdk succeeded")
+    endif()
+    execute_process(
         COMMAND make
+        WORKING_DIRECTORY ${cdk_SOURCE_DIR}
+        RESULT_VARIABLE result
+        OUTPUT_VARIABLE output
+    )
+    if(result)
+        message(FATAL_ERROR "Build step for cdk failed: ${result}")
+    else()
+        message("Build step for cdk succeeded")
+    endif()
+    execute_process(
         COMMAND make install
         WORKING_DIRECTORY ${cdk_SOURCE_DIR}
+        RESULT_VARIABLE result
+        OUTPUT_VARIABLE output
     )
-    add_dependencies(${PROJECT_NAME} cdk)
+    if(result)
+        message(FATAL_ERROR "Install step for cdk failed: ${result}")
+    else()
+        message("Install step for cdk succeeded")
+    endif()
 else()
     message("cdk already built")
 endif()
+list(APPEND LIB "${cdk_SOURCE_DIR}/build/lib/libcdk.a")
 
 find_package(Curses REQUIRED)
 
@@ -47,10 +74,9 @@ list(APPEND LIB ${CURSES_LIBRARIES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE})
 target_compile_definitions(${PROJECT_NAME} PRIVATE TERMINFO="${ncurses_SOURCE_DIR}/build/share/terminfo")
 
-target_link_libraries(${PROJECT_NAME} PUBLIC ${LIB})
-
 set_target_properties(
     ${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_SOURCE_DIR}/bin/debug
     RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/bin/release
 )
+target_link_libraries(${PROJECT_NAME} PUBLIC ${LIB})
