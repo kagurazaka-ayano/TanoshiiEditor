@@ -70,7 +70,7 @@ bool BaseWindow::validifyWindow()
     return (window_height < max_height && window_width < max_width);
 }
 
-void BaseWindow::eraseWindow(bool remove_content)
+void BaseWindow::eraseWindow()
 {
     wborder(window_ptr, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ');
     for (int i = 0; i < window_width; ++i) {
@@ -136,6 +136,38 @@ BaseWindow::~BaseWindow()
     killWindow();
 }
 
+
+void BaseWindow::updateBorder(const Border& borders)
+{
+    window_border = borders;
+    makeBorder();
+    wrefresh(window_ptr);
+}
+
+void BaseWindow::updateDimension(std::size_t width, std::size_t height)
+{
+    window_width = width;
+    window_height = height;
+    if (!validifyWindow())
+        throw std::runtime_error(fmt::format(
+            "ERROR: Window {} doesn't match dimension requirement, expected max dimension: ({}, {}), found ({}, {})",
+            name, max_width, max_height, window_width, window_height));
+    wresize(window_ptr, window_height, window_width);
+    redrawWindow(); 
+}
+
+void BaseWindow::moveTo(std::size_t x, std::size_t y)
+{
+    this->x = x;
+    this->y = y;
+    eraseWindow();
+    mvwin(window_ptr, x, y);
+    makeBorder();
+    makeWindowLabel();
+    wrefresh(window_ptr);
+}
+
+
 TextEditWindow::TextEditWindow(const Border& borders, const std::string& name, std::size_t width, std::size_t height, PANEL* associated_panel, std::size_t init_x, std::size_t init_y, std::size_t max_width, std::size_t max_height):
     BaseWindow(borders, name, width, height, associated_panel, init_x, init_y, max_width, max_height)
 {
@@ -200,32 +232,12 @@ void TextEditWindow::updateDisplay()
     mvaddstr(getY() + 1, getX() + 1, std::string(buffer).c_str());
 }
 
-void BaseWindow::updateBorder(const Border& borders)
-{
-    window_border = borders;
-    makeBorder();
-    wrefresh(window_ptr);
+void TextEditWindow::scrollUp() {
+    if (top_line != 0) top_line--;
 }
 
-void BaseWindow::updateDimension(std::size_t width, std::size_t height)
-{
-    window_width = width;
-    window_height = height;
-    if (!validifyWindow())
-        throw std::runtime_error(fmt::format(
-            "ERROR: Window {} doesn't match dimension requirement, expected max dimension: ({}, {}), found ({}, {})",
-            name, max_width, max_height, window_width, window_height));
-    wresize(window_ptr, window_height, window_width);
-    redrawWindow(); 
+void TextEditWindow::scrollDown() {
+    if (top_line != buffer.getBufferSize()) top_line++;
 }
 
-void BaseWindow::moveTo(std::size_t x, std::size_t y)
-{
-    this->x = x;
-    this->y = y;
-    eraseWindow();
-    mvwin(window_ptr, x, y);
-    makeBorder();
-    makeWindowLabel();
-    wrefresh(window_ptr);
-}
+
