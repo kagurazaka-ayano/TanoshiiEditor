@@ -78,7 +78,7 @@ public:
      * @brief refresh the window
      *
      */
-    virtual void refreshWindow() const;
+    virtual void refreshWindow();
 
     /**
      * @brief handles all the inputs
@@ -147,14 +147,34 @@ public:
     TextEditWindow(const Border& borders, const std::string& name, std::size_t width, std::size_t height, PANEL* associated_panel, std::size_t init_x, std::size_t init_y, std::size_t max_width, std::size_t max_height);
     void inputHandler(chtype ch) override;
 
+protected:
+    /**
+     * @brief Convert the wrapped column to unwrapped column
+     *
+     * @return std::size_t unwrapped column
+     */
+    std::size_t unwrappedCol() const;
+
+    /**
+     * @brief Convert the wrapped row to unwrapped row
+     *
+     * @return std::size_t nwrapped row
+     */
+    std::size_t unwrappedLine() const;
+
 private:
     /**
      * @brief update the display content of the text editing window
      *
      */
     void updateDisplay();
+
     /**
-     * @brief 
+     * @brief erase only the text portion of the window
+     *
+     */
+    void eraseTextContent();
+    /**
      * @param cursor_col which column the cursor is on, for wrapped line
      * @param cursor_line which line the cursor is on, for wrapped line
      * @param top_line which line is the line at the top

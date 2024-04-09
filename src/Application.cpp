@@ -42,6 +42,7 @@ void Application::init()
     init_x = 0;
     init_y = 0;
     w = std::make_shared<TextEditWindow>(DEFAULT_BORDER, "test", width, height, nullptr, init_x, init_y, COLS, LINES);
+    w->refreshWindow();
     refresh();
 }
 

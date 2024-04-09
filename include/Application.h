@@ -50,7 +50,7 @@ private:
      */
     void cleanUp();
 
-    /* define member variables here */
+    /* declare member variables here */
     bool app_should_terminate = false;
     std::size_t width;
     std::size_t height;
