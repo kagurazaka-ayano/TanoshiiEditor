@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.27)
 project(TanoshiiEditor)
 include(FetchContent)
+include(GoogleTest)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
@@ -12,6 +13,8 @@ FetchContent_Declare(
     URL https://invisible-island.net/datafiles/release/cdk.tar.gz
 )
 FetchContent_MakeAvailable(cdk)
+
+set(BUILD_TEST CACHE BOOL OFF)
 
 FetchContent_Declare(
     fmt
@@ -72,7 +75,7 @@ list(APPEND INCLUDE ${CURSES_INCLUDE_DIR})
 list(APPEND LIB ${CURSES_LIBRARIES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE})
-target_compile_definitions(${PROJECT_NAME} PRIVATE TERMINFO="${ncurses_SOURCE_DIR}/build/share/terminfo")
+target_compile_definitions(${PROJECT_NAME} PUBLIC TERMINFO="${ncurses_SOURCE_DIR}/build/share/terminfo")
 
 set_target_properties(
     ${PROJECT_NAME} PROPERTIES
@@ -80,3 +83,20 @@ set_target_properties(
     RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/bin/release
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC ${LIB})
+
+if(BUILD_TEST)
+    enable_testing()
+    FetchContent_Declare(
+        gtest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        main
+    )
+    FetchContent_MakeAvailable(gtest)
+    list(APPEND INCLUDE ${gtest_SOURCE_DIR}/googletest/include)
+    list(APPEND INCLUDE ${gtest_SOURCE_DIR}/googlemock/include)
+    file(GLOB TEST_SOURCES "src/test/*.cpp")
+    list(FILTER SOURCES EXCLUDE REGEX ".*/main\.cpp")
+    add_executable(${PROJECT_NAME}_test ${TEST_SOURCES} ${SOURCES})
+    target_include_directories(${PROJECT_NAME}_test PUBLIC ${INCLUDE})
+    target_link_libraries(${PROJECT_NAME}_test PUBLIC ${LIB} gtest_main)
+endif()

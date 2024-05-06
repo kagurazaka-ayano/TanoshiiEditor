@@ -105,7 +105,17 @@ public:
      */
     void wrapLines(std::size_t window_width);
 
+    /**
+     * @brief split the string by delim
+     * 
+     * @param str string pending split
+     * @param delim delimiter
+     * @return std::vector<std::string> splitted string
+     */
+    static std::vector<std::string> split(const std::string& str, const std::string& delim);
+
 private:
+    
     std::vector<std::string> lines;
     std::vector<std::tuple<std::size_t, std::string>> wrapped_lines;
     bool buffer_modified = false;

@@ -5,6 +5,7 @@
  * @brief Implementation of class TextEditWindow
  */
 
+#include "Logger.h"
 #include "Window.h"
 #include <fmt/core.h>
 #include <ncurses.h>
@@ -18,6 +19,7 @@ TextEditWindow::TextEditWindow(const Border& borders, const std::string& name, s
 
 void TextEditWindow::inputHandler(chtype ch)
 {
+    auto logger = Logger::Instance();
     switch (ch) {
     case KEY_LEFT:
         if (cursor_col != 0) {
@@ -30,48 +32,59 @@ void TextEditWindow::inputHandler(chtype ch)
     case KEY_RIGHT:
         if (cursor_col + 1 < buffer[cursor_line].size()) {
             cursor_col++;
-        } else if (cursor_line + 1 < buffer.getBufferSize()) {
+        }
+        else {
             cursor_line++;
             cursor_col = 0;
         }
         break;
     case KEY_UP:
-        if (cursor_line != 0) {
+        if (cursor_col - getWidth() < cursor_line) {
+            cursor_col -= getWidth();
+        }
+        else {
+            if (cursor_line == 0) {
+                cursor_col = 0;
+            }
             cursor_line--;
+            cursor_col = buffer[cursor_line].size() - 1;
         }
         break;
     case KEY_DOWN:
-        if (unwrappedLine() + 1 < buffer.getBufferSize()) {
+        if (cursor_line + getWidth() < buffer.getBufferSize()) {
+            cursor_col += getWidth();
+        }
+        else {
             cursor_line++;
+            cursor_col = buffer[cursor_line].size() - 1;
         }
         break;
-    #ifdef __APPLE__
-        // enter, since ncurses's definition won't work on mac
-        case 10:
-    #else
-        case KEY_ENTER:
-    #endif
+#ifdef __APPLE__
+    // enter, since ncurses's definition won't work on mac
+    case 10:
+#else
+    case KEY_ENTER:
+#endif
         buffer.appendLine("");
         buffer.wrapLines(getWidth() - 2);
         cursor_line++;
         cursor_col = 0;
         break;
-    #ifdef __APPLE__
-        // backspace, since ncurses's definition won't work on mac
-        case 127:
-    #else
-        case KEY_BACKSPACE:
-    #endif
-        if(buffer[unwrappedLine()].size() == 0) {
+#ifdef __APPLE__
+    // backspace, since ncurses's definition won't work on mac
+    case 127:
+#else
+    case KEY_BACKSPACE:
+#endif
+        if (buffer[cursor_line].size() == 0) {
             if (cursor_col == 0) {
                 buffer.wrapLines(getWidth() - 2);
                 break;
             }
             cursor_col--;
-            buffer.removeLine(unwrappedLine());
-        }
-        else {
-            buffer[unwrappedLine()].erase(unwrappedCol());
+            buffer.removeLine(cursor_line);
+        } else {
+            buffer[cursor_line].erase(cursor_col - 1, 1);
         }
         buffer.wrapLines(getWidth() - 2);
         break;
@@ -80,17 +93,18 @@ void TextEditWindow::inputHandler(chtype ch)
             cursor_line++;
             cursor_col = 1;
         }
-        buffer.addChAt(unwrappedLine(), unwrappedCol(), ch);
+        buffer.addChAt(cursor_line, cursor_col, ch);
         buffer.wrapLines(getWidth() - 2);
         cursor_col++;
         break;
     }
-    mvaddstr(getHeight() + 1, getWidth() + 1, fmt::format("unwrappedLine: {}, unwrappedCol: {}, wrappedLine: {}, wrappedCol: {}, pressedKey: {}", unwrappedLine(), unwrappedCol(), cursor_line, cursor_col, ch).c_str()); 
+    logger->info(fmt::format("cursor_line: {}, cursor_col: {}, wrapped_line: {}, wrapped_col: {}, character inputed: {}", cursor_line, cursor_col, wrappedLine(), wrappedCol(), ch));
     updateDisplay();
 }
 
 void TextEditWindow::updateDisplay()
 {
+
     eraseTextContent();
     makeBorder();
     mvaddstr(getY() + 1, getX() + 1, std::string(buffer).c_str());
@@ -119,26 +133,20 @@ void TextEditWindow::eraseTextContent()
     }
 }
 
-std::size_t TextEditWindow::unwrappedLine() const
+std::size_t TextEditWindow::wrappedLine() const
 {
-    return std::get<0>(buffer.getWrappedLineTuple(cursor_line));
-}
-
-std::size_t TextEditWindow::unwrappedCol() const {
-    std::size_t ans = cursor_col;
-    auto current_unwrapped_line = unwrappedLine();
-    // avoid unsigned integer overflow
-    if (cursor_line == 0) return ans;
-    for(int i = cursor_line - 1; i >= 0; --i) {
-        
-        auto length = std::get<0>(buffer.getWrappedLineTuple(i));
-        if (length == current_unwrapped_line) {
-            ans += length;
-        }
-        else {
+    std::size_t ans = 0;
+    for (int i = 0; i <= cursor_line; i++) {
+        if (i == cursor_line) {
+            ans += cursor_col / (getWidth() - 2) + 1;
             return ans;
         }
-        if (i == 0) return ans;
+        ans += buffer[i].size() / (getWidth() - 2) + 1;
     }
     return ans;
+}
+
+std::size_t TextEditWindow::wrappedCol() const
+{
+    return cursor_col % (getWidth() - 2) + 1;
 }

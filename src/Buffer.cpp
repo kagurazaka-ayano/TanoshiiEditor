@@ -11,6 +11,7 @@
 #include <string>
 #include <ncurses.h>
 #include <tuple>
+#include <vector>
 
 Buffer::Buffer()
 {
@@ -119,4 +120,17 @@ std::tuple<std::size_t, std::string>& Buffer::getWrappedLineTuple(std::size_t id
 std::tuple<std::size_t, std::string> Buffer::getWrappedLineTuple(std::size_t idx) const
 {
     return wrapped_lines.at(idx);
+}
+
+std::vector<std::string> Buffer::split(const std::string &str, const std::string &delim) {
+    std::vector<std::string> tokens;
+    std::size_t start = 0;
+    std::size_t end = str.find(delim);
+    while (end != std::string::npos) {
+        tokens.push_back(str.substr(start, end - start));
+        start = end + delim.length();
+        end = str.find(delim, start);
+    }
+    tokens.push_back(str.substr(start, end));
+    return tokens;
 }

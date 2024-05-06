@@ -122,10 +122,15 @@ BaseWindow::BaseWindow(const Border& borders, const std::string& name, std::size
     , max_width(max_width)
     , name(name)
 {
-    if (!validifyWindow())
+    logger = Logger::Instance();
+    if (!validifyWindow()){
+        logger->error(fmt::format(
+            "ERROR: Window {} doesn't match dimension requirement, expected max dimension: ({}, {}), found ({}, {})",
+            name, max_width, max_height, window_width, window_height));
         throw std::runtime_error(fmt::format(
             "ERROR: Window {} doesn't match dimension requirement, expected max dimension: ({}, {}), found ({}, {})",
             name, max_width, max_height, window_width, window_height));
+    }
     window_ptr = newwin(height, width, x, y);
     makeBorder();
     makeWindowLabel();
@@ -167,3 +172,4 @@ void BaseWindow::moveTo(std::size_t x, std::size_t y)
     makeWindowLabel();
     wrefresh(window_ptr);
 }
+

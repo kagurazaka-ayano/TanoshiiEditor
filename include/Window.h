@@ -9,6 +9,8 @@
 #define TANOSHIIEDITOR_WINDOW_H
 #include "Border.hpp"
 #include "Buffer.h"
+#include "Logger.h"
+#include <memory>
 #include <ncurses.h>
 #include <panel.h>
 #include <string>
@@ -87,7 +89,15 @@ public:
      */
     virtual void inputHandler(chtype ch) = 0;
 
+    /**
+     * @brief Get the Logger object
+     *
+     * @return std::shared_ptr<Logger> logger object
+     */
+    std::shared_ptr<Logger> getLogger() const;
+
 protected:
+    std::shared_ptr<Logger> logger;
     PANEL* associated_panel;
     WINDOW* window_ptr;
     /**
@@ -149,18 +159,18 @@ public:
 
 protected:
     /**
-     * @brief Convert the wrapped column to unwrapped column
+     * @brief Convert the unwrapped column to wrapped column
      *
-     * @return std::size_t unwrapped column
+     * @return std::size_t wrapped column
      */
-    std::size_t unwrappedCol() const;
+    std::size_t wrappedCol() const;
 
     /**
-     * @brief Convert the wrapped row to unwrapped row
+     * @brief Convert the unwrapped row to wrapped row
      *
-     * @return std::size_t nwrapped row
+     * @return std::size_t wrapped row
      */
-    std::size_t unwrappedLine() const;
+    std::size_t wrappedLine() const;
 
 private:
     /**
@@ -175,8 +185,8 @@ private:
      */
     void eraseTextContent();
     /**
-     * @param cursor_col which column the cursor is on, for wrapped line
-     * @param cursor_line which line the cursor is on, for wrapped line
+     * @param cursor_col which column the cursor is on, for unwrapped line
+     * @param cursor_line which line the cursor is on, for unwrapped line
      * @param top_line which line is the line at the top
      */
     std::size_t cursor_col, cursor_line, top_line;
